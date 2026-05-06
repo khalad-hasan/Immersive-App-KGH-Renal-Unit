@@ -55,10 +55,15 @@ Defines Unity events for YouTube playback lifecycle. Exposes callbacks for URL r
 ## Firebase Data Shape
 
 
-Link to Firebase Database: https://console.firebase.google.com/u/2/project/interiorhealth-vr-videos/database/interiorhealth-vr-videos-default-rtdb/data
+Link to Firebase Database: https://console.firebase.google.com/u/0/project/interiorhealth-vr-videos/database/interiorhealth-vr-videos-default-rtdb/data
 
 
 Use `Category` as the Firebase root child unless the Inspector value is changed.
+
+You have two way to provide the link. 
+Option 1: you see "Video One" Directly provides the link. The information is fetched directly from the video. 
+Option 2: you see "Video Two" you can customize the info. 
+
 
 ```json
 {
@@ -68,8 +73,8 @@ Use `Category` as the Firebase root child unless the Inspector value is changed.
       "Video Two": {
         "title": "My 360 Video",
         "url": "https://youtu.be/...",
-        "description": "Optional text",
-        "thumbnail": "https://..."
+        "desc": "Optional text",
+        "thumb": "Optional Custom Thumbnail"
       }
     }
   }
