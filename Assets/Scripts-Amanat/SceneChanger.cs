@@ -2,6 +2,7 @@
 
 using UnityEngine;
 using UnityEngine.SceneManagement; // Required for scene switching
+using UnityEngine.Video;
 using System.Collections.Generic;
 
 public class SceneChanger : MonoBehaviour
@@ -15,6 +16,7 @@ public class SceneChanger : MonoBehaviour
         if (listIndex >= 0 && listIndex < sceneNames.Count)
         {
             string sceneToLoad = sceneNames[listIndex];
+            CleanupActiveVideoPlayers();
             SceneManager.LoadScene(sceneToLoad);
         }
         else
@@ -26,6 +28,7 @@ public class SceneChanger : MonoBehaviour
     public void goBackToMainMenu()
     {
         string sceneToLoad = sceneNames[0];
+        CleanupActiveVideoPlayers();
         SceneManager.LoadScene(sceneToLoad);
     }
 
@@ -37,12 +40,38 @@ public class SceneChanger : MonoBehaviour
     // Direct load by name
     public void LoadSceneByName(string name)
     {
+        CleanupActiveVideoPlayers();
         SceneManager.LoadScene(name);
     }
 
     // Restart the current scene
     public void RestartScene()
     {
+        CleanupActiveVideoPlayers();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void CleanupActiveVideoPlayers()
+    {
+        VideoPlayer[] players = FindObjectsByType<VideoPlayer>(FindObjectsSortMode.None);
+        foreach (VideoPlayer player in players)
+        {
+            if (player == null) continue;
+
+            RenderTexture targetTexture = player.targetTexture;
+            player.Stop();
+            player.url = "";
+
+            if (targetTexture == null) continue;
+
+            RenderTexture previousActiveTexture = RenderTexture.active;
+            if (targetTexture.IsCreated())
+            {
+                RenderTexture.active = targetTexture;
+                GL.Clear(true, true, Color.black);
+                RenderTexture.active = previousActiveTexture;
+                targetTexture.Release();
+            }
+        }
     }
 }
