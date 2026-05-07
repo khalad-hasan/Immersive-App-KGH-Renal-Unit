@@ -16815,7 +16815,8 @@ MonoBehaviour:
   playerTransform: {fileID: 1373153114}
   startupPositionAnchor: {fileID: 756086973}
   movePlayerToAnchorOnStart: 1
-  startupPositionDelay: 1
+  startupPositionDelay: 0.15
+  startupPositionRetryDuration: 2
   folders: []
   selectedFolder:
     name: 
