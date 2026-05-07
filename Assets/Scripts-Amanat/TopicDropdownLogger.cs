@@ -7,7 +7,6 @@ using TMPro;
 using System.Text.RegularExpressions;
 using System;
 using Newtonsoft.Json.Linq;
-using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 [RequireComponent(typeof(TMP_Dropdown))]
 public class TopicDropdownLogger : MonoBehaviour
@@ -46,11 +45,15 @@ public class TopicDropdownLogger : MonoBehaviour
     public UnityEvent onVideosFetched;
 
     [Header("Startup Player Position")]
-    [Tooltip("Assign the TeleportAnchor GameObject's TeleportationAnchor component here. On scene start, this requests the same teleport used by the UI recenter button.")]
-    public TeleportationAnchor startupTeleportAnchor;
-    public bool requestTeleportOnStart = true;
-    [Tooltip("Small delay gives the XR Origin and TeleportationProvider time to initialize before the request is sent.")]
-    public float startupTeleportDelay = 0.25f;
+    [Tooltip("Assign the XR Origin/player root here. If empty, the script uses Camera.main's root transform.")]
+    public Transform playerTransform;
+    [Tooltip("Assign the TeleportAnchor GameObject transform here. Only its X and Z position are used.")]
+    public Transform startupPositionAnchor;
+    public bool movePlayerToAnchorOnStart = true;
+    [Tooltip("Small delay gives the XR Origin time to initialize before the position is changed.")]
+    public float startupPositionDelay = 0.25f;
+    [Tooltip("Repeats the startup move briefly so XR tracking/locomotion startup cannot overwrite it.")]
+    public float startupPositionRetryDuration = 2f;
 
     [HideInInspector] public List<R2Folder> folders = new List<R2Folder>();
     [HideInInspector] public R2Folder selectedFolder;
@@ -79,31 +82,70 @@ public class TopicDropdownLogger : MonoBehaviour
 
         if (!serverUrl.EndsWith("/")) serverUrl += "/";
 
-        if (requestTeleportOnStart)
-            StartCoroutine(RequestStartupTeleportAfterDelay());
+        if (movePlayerToAnchorOnStart)
+            StartCoroutine(MovePlayerToStartupAnchorAfterDelay());
 
         StartCoroutine(FetchFolders());
     }
 
     public void RequestStartupTeleport()
     {
-        if (startupTeleportAnchor == null)
+        MovePlayerToStartupAnchor();
+    }
+
+    public void MovePlayerToStartupAnchor()
+    {
+        Transform targetPlayerTransform = playerTransform;
+        if (targetPlayerTransform == null && Camera.main != null)
+            targetPlayerTransform = Camera.main.transform.root;
+
+        if (targetPlayerTransform == null)
         {
-            Debug.LogWarning("[TopicDropdown] Startup teleport anchor is not assigned.");
+            Debug.LogWarning("[TopicDropdown] Player transform is not assigned and no main camera was found.");
             return;
         }
 
-        startupTeleportAnchor.RequestTeleport();
+        if (startupPositionAnchor == null)
+        {
+            Debug.LogWarning("[TopicDropdown] Startup position anchor is not assigned.");
+            return;
+        }
+
+        Vector3 currentPosition = targetPlayerTransform.position;
+        Vector3 anchorPosition = startupPositionAnchor.position;
+        Camera mainCamera = Camera.main;
+
+        if (mainCamera != null && mainCamera.transform.IsChildOf(targetPlayerTransform))
+        {
+            Vector3 cameraPosition = mainCamera.transform.position;
+            Vector3 cameraToAnchorOffset = new Vector3(
+                anchorPosition.x - cameraPosition.x,
+                0f,
+                anchorPosition.z - cameraPosition.z
+            );
+
+            targetPlayerTransform.position = currentPosition + cameraToAnchorOffset;
+        }
+        else
+        {
+            targetPlayerTransform.position = new Vector3(anchorPosition.x, currentPosition.y, anchorPosition.z);
+        }
     }
 
-    private IEnumerator RequestStartupTeleportAfterDelay()
+    private IEnumerator MovePlayerToStartupAnchorAfterDelay()
     {
-        if (startupTeleportDelay > 0f)
-            yield return new WaitForSeconds(startupTeleportDelay);
+        if (startupPositionDelay > 0f)
+            yield return new WaitForSeconds(startupPositionDelay);
         else
             yield return null;
 
-        RequestStartupTeleport();
+        float endTime = Time.unscaledTime + Mathf.Max(0f, startupPositionRetryDuration);
+        do
+        {
+            MovePlayerToStartupAnchor();
+            yield return null;
+        }
+        while (Time.unscaledTime < endTime);
     }
 
     public void Refresh()
