@@ -47,7 +47,19 @@ Simple scene loading helper. Uses an Inspector list of scene names, supports loa
 Main plugin entry point for YouTube playback. Public `Play(string url)` loads and plays a YouTube URL. Keep this script as plugin-owned unless a plugin fix is required.
 
 ### `Assets/LightShaft/Scripts/YoutubeVideoController.cs`
-Controls playback UI behavior for the LightShaft player, including play, pause, volume, speed, progress seeking, fullscreen toggle, and previous/next playlist buttons.
+Controls playback UI behavior for the LightShaft player, including play, pause, replay, play/pause icon switching, volume, speed, progress seeking, fullscreen toggle, and previous/next playlist buttons.
+
+This is the main place to add current and future 360 video UI behavior. For new playback controls, add the public method here, then call it from the Inspector on the relevant UI element.
+
+Current custom controls added for this project are grouped in the `Amanat 360 Video UI Extensions` region:
+
+- `playbackIconTarget`: the `RawImage` on the play/pause button.
+- `playIconTexture`: texture shown when the video is paused and the button should play.
+- `pauseIconTexture`: texture shown when the video is playing and the button should pause.
+- `PlayToggle()`: toggles play/pause and updates the button texture.
+- `ReplayFromStart()`: seeks the current YouTube video back to the start and resumes playback.
+
+Inspector wiring note: in the 360 playback scene, select the UI element's `Text Poke Button`, then add/call the needed `YoutubeVideoController` method from its Inspector event. This keeps button behavior editable in Unity without changing scene flow scripts.
 
 ### `Assets/LightShaft/Scripts/YoutubeVideoEvents.cs`
 Defines Unity events for YouTube playback lifecycle. Exposes callbacks for URL ready, video ready, started, paused, resumed, finished, and timed video events.
@@ -87,5 +99,19 @@ Only these scenes are enabled in Build Settings:
 
 - `Assets/Scenes/0StartScreen.unity`
 - `Assets/LightShaft/Scenes/Demo6 - 360 playback.unity`
+
+## Future Steps
+
+### Video timeline and seeking UI
+The 360 playback scene currently has two UI event systems. The second UI that shows the video slider is not interactable because the required interaction components are not fully wired for Quest/controller input.
+
+Recommended next step: use the same working UI setup that already contains the three interactive buttons, add a new slider there, and replicate the existing LightShaft timeline behavior by calling `YoutubeVideoController` methods from the Inspector. The target behavior should allow users to drag or select the slider to seek to a specific point in the video.
+
+Implementation guidance:
+
+- Keep new 360 playback UI methods in `Assets/LightShaft/Scripts/YoutubeVideoController.cs`.
+- Expose methods publicly when they need to be called from Inspector events.
+- Wire UI actions through each element's `Text Poke Button` Inspector events.
+- Prefer extending the working button UI event setup instead of adding another separate EventSystem.
 
 

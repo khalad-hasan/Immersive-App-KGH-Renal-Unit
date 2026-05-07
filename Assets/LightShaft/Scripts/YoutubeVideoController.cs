@@ -23,6 +23,16 @@ namespace LightShaft.Scripts
         public Button nextVideoButton;
         public Button previousVideoButton;
 
+        #region Amanat 360 Video UI Extensions
+        [Header("Amanat 360 Video Controls")]
+        [Tooltip("RawImage on the play/pause button that receives the icon texture.")]
+        public RawImage playbackIconTarget;
+        [Tooltip("Texture shown when the video is paused and the next button press will play.")]
+        public Texture playIconTexture;
+        [Tooltip("Texture shown when the video is playing and the next button press will pause.")]
+        public Texture pauseIconTexture;
+        #endregion
+
         private bool showingVolume = false;
         private bool showingSpeed = false;
 
@@ -87,17 +97,82 @@ namespace LightShaft.Scripts
         public void Play()
         {
             _player.Play();
+            SetPlaybackIconPlaying();
         }
 
         public void Pause()
         {
             _player.Pause();
+            SetPlaybackIconPaused();
         }
 
         public void PlayToggle()
         {
+            if (_player == null || _player.videoPlayer == null)
+                return;
+
+            bool videoIsReady = _player.videoPlayer.isPrepared;
             _player.PlayPause();
+            if (videoIsReady)
+                UpdatePlaybackIconFromPlayerState();
         }
+
+        #region Amanat 360 Video UI Extensions
+        public void ReplayFromStart()
+        {
+            if (_player == null)
+                _player = GetComponent<YoutubePlayer>();
+
+            if (_player == null || _player.videoPlayer == null)
+            {
+                Debug.LogWarning("[YoutubeVideoController] Cannot replay because the YoutubePlayer is missing.");
+                return;
+            }
+
+            if (!_player.videoPlayer.isPrepared)
+            {
+                Debug.LogWarning("[YoutubeVideoController] Cannot replay because the video is not ready yet.");
+                return;
+            }
+
+            bool alreadyAtStart = _player.videoPlayer.time <= 0.05f;
+            _player.pauseCalled = false;
+            _player.progressStartDrag = false;
+
+            if (playbackSlider != null)
+                playbackSlider.value = 0;
+            if (progressRectangle != null)
+                progressRectangle.fillAmount = 0;
+
+            _player.SkipToPercent(0f);
+            if (alreadyAtStart)
+                _player.Play();
+            SetPlaybackIconPlaying();
+        }
+
+        private void UpdatePlaybackIconFromPlayerState()
+        {
+            if (_player == null)
+                return;
+
+            if (_player.pauseCalled)
+                SetPlaybackIconPaused();
+            else
+                SetPlaybackIconPlaying();
+        }
+
+        private void SetPlaybackIconPlaying()
+        {
+            if (playbackIconTarget != null && pauseIconTexture != null)
+                playbackIconTarget.texture = pauseIconTexture;
+        }
+
+        private void SetPlaybackIconPaused()
+        {
+            if (playbackIconTarget != null && playIconTexture != null)
+                playbackIconTarget.texture = playIconTexture;
+        }
+        #endregion
 
         public void ChangeVolume(float volume)
         {

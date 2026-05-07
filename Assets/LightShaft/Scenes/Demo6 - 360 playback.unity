@@ -877,6 +877,18 @@ PrefabInstance:
       propertyPath: m_Value
       value: 15521.763
       objectReference: {fileID: 0}
+    - target: {fileID: 5104312087128348224, guid: 12c019f76f187774c80eef5016cf90eb, type: 3}
+      propertyPath: m_Delegates.Array.data[1].callback.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      value: 
+      objectReference: {fileID: 1210745971389140729}
+    - target: {fileID: 5104312087128348224, guid: 12c019f76f187774c80eef5016cf90eb, type: 3}
+      propertyPath: m_Delegates.Array.data[1].callback.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
+      value: ReplayFromStart
+      objectReference: {fileID: 0}
+    - target: {fileID: 5104312087128348224, guid: 12c019f76f187774c80eef5016cf90eb, type: 3}
+      propertyPath: m_Delegates.Array.data[1].callback.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
+      value: LightShaft.Scripts.YoutubeVideoController, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 5119065930501269060, guid: 12c019f76f187774c80eef5016cf90eb, type: 3}
       propertyPath: m_Name
       value: UI
@@ -946,6 +958,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 12c019f76f187774c80eef5016cf90eb, type: 3}
+--- !u!114 &1732567611 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7524408427560568162, guid: 12c019f76f187774c80eef5016cf90eb, type: 3}
+  m_PrefabInstance: {fileID: 1732567610}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
 --- !u!850595691 &1741531220
 LightingSettings:
   m_ObjectHideFlags: 0
@@ -1244,6 +1267,9 @@ MonoBehaviour:
   loading: {fileID: 4680734538883366951}
   nextVideoButton: {fileID: 6571767758777918007}
   previousVideoButton: {fileID: 6571767758840395683}
+  playbackIconTarget: {fileID: 1732567611}
+  playIconTexture: {fileID: 2800000, guid: 65ab52e9d700cfe429dd4bec37b8f366, type: 3}
+  pauseIconTexture: {fileID: 2800000, guid: 411dc4eb98002294eb69ba8663590bb6, type: 3}
   controllerMainUI: {fileID: 4680933503463951669}
   hideScreenControlTime: 0
   useSliderToProgressVideo: 1
