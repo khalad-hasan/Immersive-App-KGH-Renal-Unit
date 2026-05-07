@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.XR;
 
 public class ResetPosition : MonoBehaviour
 {
@@ -16,10 +18,38 @@ public class ResetPosition : MonoBehaviour
     [Tooltip("Repeats the startup move briefly so XR tracking/locomotion startup cannot overwrite it.")]
     public float startupRetryDuration = 2f;
 
+    [Header("Meta/Oculus Recenter")]
+    [Tooltip("Re-apply the same position correction when the headset tracking origin is reset.")]
+    public bool resetAfterTrackingOriginChange = true;
+    [Tooltip("Small delay lets the headset finish applying its recenter before this script corrects the scene position.")]
+    public float trackingOriginResetDelay = 0.1f;
+    [Tooltip("Repeats the correction briefly after recenter so the final headset position stays on the anchor.")]
+    public float trackingOriginRetryDuration = 1f;
+
+    private readonly List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
+    private Coroutine resetRoutine;
+
+    private void OnEnable()
+    {
+        RegisterTrackingOriginCallbacks();
+    }
+
+    private void OnDisable()
+    {
+        UnregisterTrackingOriginCallbacks();
+        if (resetRoutine != null)
+        {
+            StopCoroutine(resetRoutine);
+            resetRoutine = null;
+        }
+    }
+
     private void Start()
     {
+        RegisterTrackingOriginCallbacks();
+
         if (resetPositionOnStart)
-            StartCoroutine(ResetPositionAfterDelay());
+            StartResetRoutine(startupDelay, startupRetryDuration);
     }
 
     public void ResetPlayerPosition()
@@ -61,19 +91,60 @@ public class ResetPosition : MonoBehaviour
         }
     }
 
-    private IEnumerator ResetPositionAfterDelay()
+    private void StartResetRoutine(float delay, float retryDuration)
     {
-        if (startupDelay > 0f)
-            yield return new WaitForSeconds(startupDelay);
+        if (resetRoutine != null)
+            StopCoroutine(resetRoutine);
+
+        resetRoutine = StartCoroutine(ResetPositionAfterDelay(delay, retryDuration));
+    }
+
+    private IEnumerator ResetPositionAfterDelay(float delay, float retryDuration)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
         else
             yield return null;
 
-        float endTime = Time.unscaledTime + Mathf.Max(0f, startupRetryDuration);
+        float endTime = Time.unscaledTime + Mathf.Max(0f, retryDuration);
         do
         {
             ResetPlayerPosition();
             yield return null;
         }
         while (Time.unscaledTime < endTime);
+
+        resetRoutine = null;
+    }
+
+    private void RegisterTrackingOriginCallbacks()
+    {
+        UnregisterTrackingOriginCallbacks();
+
+        SubsystemManager.GetSubsystems(inputSubsystems);
+        foreach (XRInputSubsystem inputSubsystem in inputSubsystems)
+        {
+            if (inputSubsystem != null)
+                inputSubsystem.trackingOriginUpdated += OnTrackingOriginUpdated;
+        }
+    }
+
+    private void UnregisterTrackingOriginCallbacks()
+    {
+        foreach (XRInputSubsystem inputSubsystem in inputSubsystems)
+        {
+            if (inputSubsystem != null)
+                inputSubsystem.trackingOriginUpdated -= OnTrackingOriginUpdated;
+        }
+
+        inputSubsystems.Clear();
+    }
+
+    private void OnTrackingOriginUpdated(XRInputSubsystem inputSubsystem)
+    {
+        if (!resetAfterTrackingOriginChange)
+            return;
+
+        StartResetRoutine(trackingOriginResetDelay, trackingOriginRetryDuration);
     }
 }

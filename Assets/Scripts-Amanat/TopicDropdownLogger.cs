@@ -7,6 +7,7 @@ using TMPro;
 using System.Text.RegularExpressions;
 using System;
 using Newtonsoft.Json.Linq;
+using UnityEngine.XR;
 
 [RequireComponent(typeof(TMP_Dropdown))]
 public class TopicDropdownLogger : MonoBehaviour
@@ -55,8 +56,19 @@ public class TopicDropdownLogger : MonoBehaviour
     [Tooltip("Repeats the startup move briefly so XR tracking/locomotion startup cannot overwrite it.")]
     public float startupPositionRetryDuration = 2f;
 
+    [Header("Meta/Oculus Recenter")]
+    [Tooltip("Re-apply the same position correction when the headset tracking origin is reset.")]
+    public bool resetAfterTrackingOriginChange = true;
+    [Tooltip("Small delay lets the headset finish applying its recenter before this script corrects the scene position.")]
+    public float trackingOriginResetDelay = 0.1f;
+    [Tooltip("Repeats the correction briefly after recenter so the final headset position stays on the anchor.")]
+    public float trackingOriginRetryDuration = 1f;
+
     [HideInInspector] public List<R2Folder> folders = new List<R2Folder>();
     [HideInInspector] public R2Folder selectedFolder;
+
+    private readonly List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
+    private Coroutine positionRoutine;
 
     [System.Serializable]
     public class R2Video
@@ -75,15 +87,32 @@ public class TopicDropdownLogger : MonoBehaviour
         public List<R2Video> videos;
     }
 
+    private void OnEnable()
+    {
+        RegisterTrackingOriginCallbacks();
+    }
+
+    private void OnDisable()
+    {
+        UnregisterTrackingOriginCallbacks();
+        if (positionRoutine != null)
+        {
+            StopCoroutine(positionRoutine);
+            positionRoutine = null;
+        }
+    }
+
     void Start()
     {
+        RegisterTrackingOriginCallbacks();
+
         dropdown = GetComponent<TMP_Dropdown>();
         dropdown.onValueChanged.AddListener(OnDropdownChanged);
 
         if (!serverUrl.EndsWith("/")) serverUrl += "/";
 
         if (movePlayerToAnchorOnStart)
-            StartCoroutine(MovePlayerToStartupAnchorAfterDelay());
+            StartPositionRoutine(startupPositionDelay, startupPositionRetryDuration);
 
         StartCoroutine(FetchFolders());
     }
@@ -132,25 +161,67 @@ public class TopicDropdownLogger : MonoBehaviour
         }
     }
 
-    private IEnumerator MovePlayerToStartupAnchorAfterDelay()
+    private void StartPositionRoutine(float delay, float retryDuration)
     {
-        if (startupPositionDelay > 0f)
-            yield return new WaitForSeconds(startupPositionDelay);
+        if (positionRoutine != null)
+            StopCoroutine(positionRoutine);
+
+        positionRoutine = StartCoroutine(MovePlayerToStartupAnchorAfterDelay(delay, retryDuration));
+    }
+
+    private IEnumerator MovePlayerToStartupAnchorAfterDelay(float delay, float retryDuration)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
         else
             yield return null;
 
-        float endTime = Time.unscaledTime + Mathf.Max(0f, startupPositionRetryDuration);
+        float endTime = Time.unscaledTime + Mathf.Max(0f, retryDuration);
         do
         {
             MovePlayerToStartupAnchor();
             yield return null;
         }
         while (Time.unscaledTime < endTime);
+
+        positionRoutine = null;
+    }
+
+    private void RegisterTrackingOriginCallbacks()
+    {
+        UnregisterTrackingOriginCallbacks();
+
+        SubsystemManager.GetSubsystems(inputSubsystems);
+        foreach (XRInputSubsystem inputSubsystem in inputSubsystems)
+        {
+            if (inputSubsystem != null)
+                inputSubsystem.trackingOriginUpdated += OnTrackingOriginUpdated;
+        }
+    }
+
+    private void UnregisterTrackingOriginCallbacks()
+    {
+        foreach (XRInputSubsystem inputSubsystem in inputSubsystems)
+        {
+            if (inputSubsystem != null)
+                inputSubsystem.trackingOriginUpdated -= OnTrackingOriginUpdated;
+        }
+
+        inputSubsystems.Clear();
+    }
+
+    private void OnTrackingOriginUpdated(XRInputSubsystem inputSubsystem)
+    {
+        if (!resetAfterTrackingOriginChange)
+            return;
+
+        StartPositionRoutine(trackingOriginResetDelay, trackingOriginRetryDuration);
     }
 
     public void Refresh()
     {
         StopAllCoroutines();
+        positionRoutine = null;
         StartCoroutine(FetchFolders());
     }
 
