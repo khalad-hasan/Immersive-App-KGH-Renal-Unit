@@ -7,6 +7,7 @@ using TMPro;
 using System.Text.RegularExpressions;
 using System;
 using Newtonsoft.Json.Linq;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 [RequireComponent(typeof(TMP_Dropdown))]
 public class TopicDropdownLogger : MonoBehaviour
@@ -44,6 +45,13 @@ public class TopicDropdownLogger : MonoBehaviour
     public UnityEvent onFoldersFetched;
     public UnityEvent onVideosFetched;
 
+    [Header("Startup Player Position")]
+    [Tooltip("Assign the TeleportAnchor GameObject's TeleportationAnchor component here. On scene start, this requests the same teleport used by the UI recenter button.")]
+    public TeleportationAnchor startupTeleportAnchor;
+    public bool requestTeleportOnStart = true;
+    [Tooltip("Small delay gives the XR Origin and TeleportationProvider time to initialize before the request is sent.")]
+    public float startupTeleportDelay = 0.25f;
+
     [HideInInspector] public List<R2Folder> folders = new List<R2Folder>();
     [HideInInspector] public R2Folder selectedFolder;
 
@@ -71,7 +79,31 @@ public class TopicDropdownLogger : MonoBehaviour
 
         if (!serverUrl.EndsWith("/")) serverUrl += "/";
 
+        if (requestTeleportOnStart)
+            StartCoroutine(RequestStartupTeleportAfterDelay());
+
         StartCoroutine(FetchFolders());
+    }
+
+    public void RequestStartupTeleport()
+    {
+        if (startupTeleportAnchor == null)
+        {
+            Debug.LogWarning("[TopicDropdown] Startup teleport anchor is not assigned.");
+            return;
+        }
+
+        startupTeleportAnchor.RequestTeleport();
+    }
+
+    private IEnumerator RequestStartupTeleportAfterDelay()
+    {
+        if (startupTeleportDelay > 0f)
+            yield return new WaitForSeconds(startupTeleportDelay);
+        else
+            yield return null;
+
+        RequestStartupTeleport();
     }
 
     public void Refresh()

@@ -16417,6 +16417,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c4a645c929982ea41a52b5037ee7d94d, type: 3}
+--- !u!114 &1071784862 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7904545763372973562, guid: c4a645c929982ea41a52b5037ee7d94d, type: 3}
+  m_PrefabInstance: {fileID: 1071784861}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2f4617667341945b5a7756e14b62d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1083396359
 GameObject:
   m_ObjectHideFlags: 0
@@ -16812,6 +16823,9 @@ MonoBehaviour:
   onVideosFetched:
     m_PersistentCalls:
       m_Calls: []
+  startupTeleportAnchor: {fileID: 1071784862}
+  requestTeleportOnStart: 1
+  startupTeleportDelay: 0.25
   folders: []
   selectedFolder:
     name: 
